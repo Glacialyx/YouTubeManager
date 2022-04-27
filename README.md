@@ -1,4 +1,2 @@
-'''diff
--#VIDEOMANAGER
-'''
+# VIDEOMANAGER
 Repository to download and manage videos
