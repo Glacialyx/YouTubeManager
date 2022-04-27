@@ -12,8 +12,8 @@ nfunc=re.escape(function_match.group(1))),
 '''
 
 videolink = "https://www.youtube.com/watch?v=5Ec47-RwFsM"
-yt = YouTube(videolink)
 outputpath = "C:/Users/username/Downloads"
+yt = YouTube(videolink)
 print(yt.streams)  #look at needed itag
 stream = yt.streams.get_by_itag(315)  #itag 315 = 4k (in this case)
 stream.download(output_path=outputpath)
