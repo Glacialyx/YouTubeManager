@@ -17,4 +17,4 @@ def videotoframes(videoname, newfoldername=None):
         # save frame as JPEG file
         cv2.imwrite(os.path.join(newfoldername, f"frame{count}.jpg"), image)
         count += 1
-    print("{} images are extacted in {}.".format(count+1, newfoldername))
+    print("{} images are extacted in {}.".format(count, newfoldername))
