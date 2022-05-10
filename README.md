@@ -1,2 +1,2 @@
 # YouTubeManager
-Repository to download and manage videos.
+Repository to download and manage youtube videos and audios.
