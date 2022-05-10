@@ -1,22 +1,25 @@
 from pytube import YouTube
+from pytube.cli import on_progress
 import os
-'''
-In pytube's cipher.py:
-change var_regex at line 30 to this:
-re.compile(r"^\$*\w+\W")
-change lines 272-273 (in function_patterns) to this:
-r'a\.[a-zA-Z]\s*&&\s*\([a-z]\s*=\s*a\.get\("n"\)\)\s*&&\s*'
-r'\([a-z]\s*=\s*([a-zA-Z0-9$]{2,3})(\[\d+\])?\([a-z]\)'
-change line 288 to this:
-nfunc=re.escape(function_match.group(1))),
-'''
+
+
+def downloadlink(videolink, outputpath, itag=None, filename=''):
+    yt = YouTube(videolink, on_progress_callback=on_progress)
+    stream = yt.streams.get_by_itag(itag)  # look at needed itag, itag 315 = 4k (in this case)
+    print(f'Downloading the {stream.type}: {yt.title}')
+    if filename == '':
+        file = stream.default_filename
+        stream.download(output_path=outputpath)
+    else:
+        file = filename+stream.default_filename[stream.default_filename.index('.'):]
+        stream.download(output_path=outputpath, filename=file)
+    return file
 
 
 def converter_ffmpeg(input_file, output_file, input_path, audio_quality='160k'):
-    os.chdir(input_path)
-    conversion_command = f'ffmpeg -i "{input_file}" -crf 2 -b:a {audio_quality} "{output_file}"'
+    os.chdir(input_path)  # crf 17 is almost always visually lossless but resolutions>=1440p permit higher crf
+    conversion_command = f'ffmpeg -i "{input_file}" -crf 17 -b:a {audio_quality} "{output_file}"'
     os.system(conversion_command)
-
 
 
 def video_audio_merge(video, audio, final):
@@ -24,117 +27,142 @@ def video_audio_merge(video, audio, final):
     os.system(video_audio_merge_command)
 
 
-def download(videolink, outputpath, itag=None, filename=''):
+def show_options(videolink):
     yt = YouTube(videolink)
-    print(yt.streams)  # look at needed itag
-    stream = yt.streams.get_by_itag(itag)  # itag 315 = 4k (in this case)
-    if filename == '':
-        stream.download(output_path=outputpath)
-    else:
-        stream.download(output_path=outputpath, filename=filename+stream.default_filename[stream.default_filename.index('.'):])
-    return yt
+    print("VIDEO OPTIONS (mp4):\n")
+    for option in reversed(yt.streams.order_by('resolution')):
+        if option.is_progressive is False:
+            if option.resolution != '1440p' and option.resolution != '2160p':
+                if option.mime_type == "video/mp4" and option.video_codec[:4] != 'av01':
+                    print(f"  Resolution:    {option.resolution:7}   Code: {option.itag}")
+            else:
+                if option.video_codec == 'vp9':
+                    print(f"  Resolution:    {option.resolution:7}   Code: {option.itag}")
+    print("\nAUDIO OPTIONS (mp3):\n")
+    for option in reversed(yt.streams.order_by('abr')):
+        if option.is_progressive is False:
+            print(f"  Audio quality: {option.abr:7}   Code: {option.itag}")
 
 
-def downloadoptions(videolink, outputpath, itag=None, filename=''):
-    yt = YouTube(videolink)
-    print(f"{yt.title}")
-    stream = ''
-    if itag is None:
-        bestie = int(input("Write 1 to download the best video+audio available or 2 to choose: "))
-        if bestie == 1:
-            itag = 'best'
-        else:
-            print("VIDEO OPTIONS:      Note: 1440p and 4k mp4 videos might not be supported on your device\n")
-            for option in reversed(yt.streams.order_by('resolution')):
-                if option.is_progressive is False:
-                    if option.resolution != '1440p' and option.resolution != '2160p':
-                        if option.mime_type == "video/mp4":
-                            print(f"  Resolution:    {option.resolution:7}  Type: {'.mp4':6}  Code: {option.itag}")
-                    else:
-                        print(f"  Resolution:    {option.resolution:7}  Type: {option.default_filename[option.default_filename.index('.'):]:6}  Code: {option.itag}")
-            print("\nAUDIO OPTIONS:\n")
-            for option in reversed(yt.streams.order_by('abr')):
-                if option.is_progressive is False:
-                    print(f"  Audio quality: {option.abr:7}  Type: {'.mp3':6}  Code: {option.itag}")
-            itag = int(input("\nWrite the code of the selected download and hit enter: "))
-    both_vid_aud = 'y'
-    if itag == 'best':
+def find_best_stream(yt, format):
+    stream = None
+    if format == 'video':
         for option in reversed(yt.streams.order_by('resolution')):
             if option.is_progressive is False:
-                stream = option
-                break
-    else:
-        stream = yt.streams.get_by_itag(itag)
-        both_vid_aud = 'n'
-        if stream.type == 'video':
-            both_vid_aud = input("Do you also want the audio? (y/n): ")
-    if filename == '':
-        default_file = stream.default_filename
-        filename = default_file[:default_file.index('.')]
-    else:
-        default_file = filename + stream.default_filename[stream.default_filename.index('.'):]
-    final_file = default_file
-    if both_vid_aud.lower() == 'n':
-        if stream.type == 'audio':
-            tempname = filename + ' temp'
-            temp = tempname + default_file[default_file.index('.'):]
-            download(videolink, os.getcwd(), stream.itag, tempname)
-            final_file = filename + '.mp3'
-            if temp[temp.index('.'):] != final_file[final_file.index('.'):]:
-                converter_ffmpeg(temp, final_file, os.getcwd(), stream.abr[:stream.abr.index('b')])
-                os.remove(f'{os.getcwd()}\\{temp}')
-        elif stream.resolution == '1440p' or stream.resolution == '2160p':
-            tempname = filename + ' temp'
-            temp = tempname + default_file[default_file.index('.'):]
-            download(videolink, os.getcwd(), stream.itag, tempname)
-            final_file = filename + '.mp4'
-            converter_ffmpeg(temp, final_file, os.getcwd(), stream.abr[:stream.abr.index('b')])
-            os.remove(f'{os.getcwd()}\\{temp}')
-        else:
-            download(videolink, os.getcwd(), stream.itag, final_file)
-        os.rename(f'{os.getcwd()}\\{final_file}', f'{outputpath}/{final_file}')
-    else:
-        tempvideoname = filename + ' temp video'
-        tempvideo = tempvideoname + default_file[default_file.index('.'):]
-        download(videolink, os.getcwd(), stream.itag, tempvideoname)
-        converted_video = tempvideoname + ' converted.mp4'
-        delete_tempvideo = True
-        if tempvideo[tempvideo.index('.'):] != '.mp4' or stream.resolution == '1440p' or stream.resolution == '2160p':
-            converter_ffmpeg(tempvideo, converted_video, os.getcwd())
-            os.remove(f'{os.getcwd()}\\{tempvideo}')
-            delete_tempvideo = False
+                if option.resolution != '2160p' and option.resolution != '1440p':
+                    if option.video_codec[:4] != 'av01':
+                        stream = option
+                        break
+                else:
+                    if option.video_codec == 'vp9':
+                        stream = option
+                        break
+    if format == 'audio':
         for option in reversed(yt.streams.order_by('abr')):
             if option.is_progressive is False:
                 stream = option
                 break
-        default_file = stream.default_filename
-        tempaudioname = filename + ' temp audio'
-        tempaudio = tempaudioname + default_file[default_file.index('.'):]
-        download(videolink, os.getcwd(), stream.itag, tempaudioname)
-        converted_audio = tempaudioname + ' converted.mp3'
-        delete_tempaudio = True
-        if tempaudio[tempaudio.index('.'):] != '.mp3':
-            converter_ffmpeg(tempaudio, converted_audio, os.getcwd())
-            os.remove(f'{os.getcwd()}\\{tempaudio}')
-            delete_tempaudio = False
-        if not delete_tempaudio and not delete_tempvideo:
-            video_audio_merge(converted_video, converted_audio, filename + '.mp4')
-            os.remove(f'{os.getcwd()}\\{converted_video}')
-            os.remove(f'{os.getcwd()}\\{converted_audio}')
-        elif not delete_tempaudio and delete_tempvideo:
-            video_audio_merge(tempvideo, converted_audio, filename + '.mp4')
+    return stream
+
+
+def downloadoptions(videolink, outputpath, itag=None, filename=''):
+    yt = YouTube(videolink)
+    video_stream = None
+    audio_stream = None
+    tempvideo_name = ''
+    tempaudio_name = ''
+    convertaud = ''
+    convertvid = ''
+    finalfile = ''
+    video_conversion_needed = False
+    still_selecting = False
+    if itag is None:
+        mode = int(input("Write 1 for best video+audio, 2 for best audio and 3 to choose: "))
+        if mode == 1:
+            itag = 'best video'
+        elif mode == 2:
+            itag = 'best audio'
+        else:
+            itag = 'select'
+    if itag == 'best video':
+        video_stream = find_best_stream(yt, 'video')
+        audio_stream = find_best_stream(yt, 'audio')
+    if itag == 'best audio':
+        audio_stream = find_best_stream(yt, 'audio')
+    if itag == 'select':
+        still_selecting = True
+        show_options(videolink)
+        itag = int(input("\nWrite the code of the selected download and hit enter: "))
+    if type(itag) == int:
+        if yt.streams.get_by_itag(itag).type == 'audio':
+            audio_stream = yt.streams.get_by_itag(itag)
+        else:
+            video_stream = yt.streams.get_by_itag(itag)
+            if still_selecting is True:
+                audio_needed = input("Do you also want the audio (y/n): ").lower()
+                if audio_needed == 'y' or audio_needed == 'yes':
+                    audio_stream = find_best_stream(yt, 'audio')
+    if filename == '':
+        filename = yt.streams.first().default_filename[:yt.streams.first().default_filename.index('.')]
+    try:
+        if video_stream is None:
+            tempaudio_name = filename + ' temp audio'
+            tempaudio = downloadlink(videolink, os.getcwd(), audio_stream.itag, tempaudio_name)
+            finalfile = filename + '.mp3'
+        else:
+            if video_stream.resolution == '1440p' or video_stream.resolution == '2160p':
+                video_conversion_needed = True
+                tempvideo_name = filename + ' temp video'
+            if audio_stream is None:
+                if video_conversion_needed:
+                    tempvideo = downloadlink(videolink, os.getcwd(), video_stream.itag, tempvideo_name)
+                    finalfile = filename + '.mp4'
+                else:
+                    finalfile = downloadlink(videolink, os.getcwd(), video_stream.itag, filename)
+            else:
+                tempvideo_name = filename + ' temp video'
+                tempvideo = downloadlink(videolink, os.getcwd(), video_stream.itag, tempvideo_name)
+                tempaudio_name = filename + ' temp audio'
+                tempaudio = downloadlink(videolink, os.getcwd(), audio_stream.itag, tempaudio_name)
+                finalfile = filename + '.mp4'
+        if tempaudio_name != '':
+            if tempvideo_name == '':
+                print("Converting the audio...")
+                converter_ffmpeg(tempaudio, finalfile, os.getcwd(), audio_stream.abr[:audio_stream.abr.index('b')])
+                os.remove(f'{os.getcwd()}\\{tempaudio}')
+            else:
+                convertaud = filename + ' converted audio.mp3'
+                print("Converting the audio...")
+                converter_ffmpeg(tempaudio, convertaud, os.getcwd())
+                if video_conversion_needed:
+                    convertvid = filename + ' converted video.mp4'
+                    print("Converting the video...")
+                    converter_ffmpeg(tempvideo, convertvid, os.getcwd())
+                    print("Merging video and audio...")
+                    video_audio_merge(convertvid, convertaud, finalfile)
+                    os.remove(f'{os.getcwd()}\\{convertvid}')
+                else:
+                    print("Merging video and audio...")
+                    video_audio_merge(tempvideo, convertaud, finalfile)
+                os.remove(f'{os.getcwd()}\\{convertaud}')
+                os.remove(f'{os.getcwd()}\\{tempvideo}')
+                os.remove(f'{os.getcwd()}\\{tempaudio}')
+        else:
+            if video_conversion_needed:
+                print("Converting the video...")
+                converter_ffmpeg(tempvideo, finalfile, os.getcwd())
+                os.remove(f'{os.getcwd()}\\{tempvideo}')
+        os.rename(f'{os.getcwd()}\\{finalfile}', f'{outputpath}/{finalfile}')
+    except:
+        print("Something went wrong, please try again")
+        if tempvideo_name != '':
             os.remove(f'{os.getcwd()}\\{tempvideo}')
-            os.remove(f'{os.getcwd()}\\{converted_audio}')
-        elif delete_tempaudio and not delete_tempvideo:
-            video_audio_merge(converted_video, tempaudio, filename + '.mp4')
-            os.remove(f'{os.getcwd()}\\{converted_video}')
+        if tempaudio_name != '':
             os.remove(f'{os.getcwd()}\\{tempaudio}')
-        os.rename(f'{os.getcwd()}\\{final_file}', f'{outputpath}/{final_file}')
+        if convertaud != '':
+            os.remove(f'{os.getcwd()}\\{convertaud}')
+        if convertvid != '':
+            os.remove(f'{os.getcwd()}\\{convertvid}')
+        if finalfile != '':
+            os.remove(f'{os.getcwd()}\\{finalfile}')
     return yt
-
-
-videolink = "https://www.youtube.com/watch?v=Fmdb-KmlzD8"
-outputpath = "C:/Users/sadee/Downloads"
-itag = 299
-yt = downloadoptions(videolink, outputpath)
-print(f'{yt.title} has finished downloading')
