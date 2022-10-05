@@ -1,4 +1,5 @@
 from pytube import YouTube
+from pytube import Playlist
 from pytube.cli import on_progress
 import os
 
