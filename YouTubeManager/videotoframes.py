@@ -20,5 +20,5 @@ def videotoframes(videoname, newfoldername=None):
 
 
 if __name__ == "__main__":
-    videoname = "Upcoming Game _ _Black Rock Shooter FRAGMENT_ First Look Gameplay Trailer.mp4"
+    videoname = "VideoName.mp4"
     videotoframes(videoname)
