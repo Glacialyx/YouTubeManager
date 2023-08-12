@@ -9,8 +9,8 @@ import os
 
 def upload_to_youtube(video_path, playlist_name=None):
     # set the path to the Firefox GeckoDriver executable
-    webdriver_path = "C:\\Users\\sadee\\Documents\\Coding\\geckodriver-v0.33.0-win64\\geckodriver.exe"
-    profile_path = "C:\\Users\\sadee\\AppData\\Roaming\\Mozilla\\Firefox\\Profiles\\7alihnnu.default-release"
+    webdriver_path = "C:\\Users\\username\\Documents\\Coding\\geckodriver-v0.33.0-win64\\geckodriver.exe"
+    profile_path = "C:\\Users\\username\\AppData\\Roaming\\Mozilla\\Firefox\\Profiles\\blablabla.default-release"
     options = webdriver.FirefoxOptions()
     options.profile = webdriver.FirefoxProfile(profile_path)
     options.add_argument("--headless")
@@ -69,8 +69,8 @@ def move_video_to_playlist(video_url, playlist_name, driver=None):
     quit_browser = False
     if driver == None:
         # set the path to the Firefox GeckoDriver executable
-        webdriver_path = "C:\\Users\\sadee\\Downloads\\geckodriver-v0.33.0-win64\\geckodriver.exe"
-        profile_path = "C:\\Users\\sadee\\AppData\\Roaming\\Mozilla\\Firefox\\Profiles\\7alihnnu.default-release"
+        webdriver_path = "C:\\Users\\username\\Downloads\\geckodriver-v0.33.0-win64\\geckodriver.exe"
+        profile_path = "C:\\Users\\username\\AppData\\Roaming\\Mozilla\\Firefox\\Profiles\\blablabla.default-release"
         options = webdriver.FirefoxOptions()
         options.profile = webdriver.FirefoxProfile(profile_path)
         options.add_argument("--headless")
@@ -134,6 +134,6 @@ def playlists_of_channel(channel_url):
 
 
 if __name__ == "__main__":
-    video_folder_path = "C:\\Users\\sadee\\Downloads\\To Do\\Upload To YouTube"
+    video_folder_path = "C:\\Users\\username\\Downloads\\To Do\\Upload To YouTube"
     for video in os.listdir(video_folder_path):
-        upload_to_youtube(f"{video_folder_path}\\{video}", "jefkrty  ninfi j sSHHSj")
+        upload_to_youtube(f"{video_folder_path}\\{video}", "Playlist Name")
