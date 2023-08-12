@@ -34,9 +34,9 @@ def update_playlist(playlist_url, saved_playlist_url):
 
 if __name__ == "__main__":
     # pytube version 12.0.0 required (pip install --force-reinstall pytube==12.0.0)
-    channel = "https://www.youtube.com/channel/UCySOp16uUC6kRVZAfhL2OeA"
+    channel = "https://www.youtube.com/@channel"
     playlists_url = playlists_of_channel(channel)
-    saved_channel = "https://www.youtube.com/@thereposterofvideos"
+    saved_channel = "https://www.youtube.com/@channelsave"
     saved_playlists_url = playlists_of_channel(saved_channel)
     for playlist_url in playlists_url:
         playlist = Playlist(playlist_url)
