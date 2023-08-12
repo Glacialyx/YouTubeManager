@@ -170,9 +170,8 @@ def downloadoptions(videolink, outputpath, itag=None, filename=''):
 
 if __name__ == "__main__":
     # pytube version 12.0.0 required (pip install --force-reinstall pytube==12.0.0)
-    videolink = "https://www.youtube.com/watch?v=qWwytxc6jy4"
-    link = "https://www.youtube.com/watch?v=OkmNXy7er84"
-    outputpath = "C:\\Users\\sadee\\Downloads"
+    videolink = "https://www.youtube.com/watch?v=videolink123"
+    outputpath = "C:\\Users\\username\\Downloads"
     itag = 'best video'  # (optional) itag can be "best audio", "best video", "select" or certain numbers
     yt = downloadoptions(videolink, outputpath, itag)
     print(f'\n{yt.title} has finished downloading\n')
